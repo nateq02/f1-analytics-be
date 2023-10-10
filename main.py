@@ -30,8 +30,21 @@ def get_driver_standings():
 
     # convert the standings df to json
         # orient parameter is used to store each record in its own dictionary
-        #    with each field:value pair
-    return standings.to_json(orient = 'table')
+    return standings.to_json(orient = 'records')
+
+@app.get("/constructor-standings")
+def get_constructor_standings():
+    # enables cache, maybe move outside of the function
+    Fastf1.Cache.enable_cache('/Users/natequan/Desktop/Fall2023/OPIM4996/f1-analytics/f1-analytics-be/cache')
+    
+    # calls get_constructor_standings from Ergast
+        # need to call .content[0] to retreive the content
+            # data is stored in an array of multiple data frames hence the [0]
+    standings = ergast.get_constructor_standings(season='current').content[0]
+
+    # convert the standings df to json
+        # orient parameter is used to store each record in its own dictionary
+    return standings.to_json(orient = 'records')
 
 @app.get("/next")
 def get_next_session():
