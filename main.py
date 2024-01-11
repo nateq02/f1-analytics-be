@@ -5,6 +5,9 @@ from fastf1.ergast import Ergast
 import pandas as pd
 import json
 import datetime
+from typing import Union
+
+# python3 -m uvicorn main:app --reload
 
 app = FastAPI()
 ergast = Ergast()
@@ -22,11 +25,12 @@ def home():
 @app.get("/driver-standings")
 def get_driver_standings():
     # enables cache, maybe move outside of the function
-    f1.Cache.enable_cache('/Users/natequan/Desktop/Fall2023/OPIM4996/f1-analytics/f1-analytics-be/cache')
+    f1.Cache.enable_cache('/Users/natequan/Desktop/School/Thesis/f1-analytics/f1-analytics-be/cache')
     
     # calls get_driver_standings from Ergast
         # need to call .content[0] to retreive the content
             # data is stored in an array of multiple data frames hence the [0]
+    # standings = ergast.get_driver_standings(season='current').content[0]
     standings = ergast.get_driver_standings(season='current').content[0]
 
     # convert the standings df to json
@@ -36,7 +40,7 @@ def get_driver_standings():
 @app.get("/constructor-standings")
 def get_constructor_standings():
     # enables cache, maybe move outside of the function
-    f1.Cache.enable_cache('/Users/natequan/Desktop/Fall2023/OPIM4996/f1-analytics/f1-analytics-be/cache')
+    f1.Cache.enable_cache('/Users/natequan/Desktop/School/Thesis/f1-analytics/f1-analytics-be/cache')
     
     # calls get_constructor_standings from Ergast
         # need to call .content[0] to retreive the content
@@ -50,7 +54,7 @@ def get_constructor_standings():
 @app.get("/next")
 def get_next_session():
     # enables cache
-    f1.Cache.enable_cache('/Users/natequan/Desktop/Fall2023/OPIM4996/f1-analytics/f1-analytics-be/cache')
+    f1.Cache.enable_cache('/Users/natequan/Desktop/School/Thesis/f1-analytics/f1-analytics-be/cache')
     
     # gets the upcoming events, returned as an events type object
     upcoming = f1.get_events_remaining()
@@ -73,7 +77,7 @@ def get_next_session():
 
 # function to get round number of a past event
 def get_past_event():
-    f1.Cache.enable_cache('/Users/natequan/Library/Caches/fastf1')
+    f1.Cache.enable_cache('/Users/natequan/Desktop/School/Thesis/f1-analytics/f1-analytics-be/cache')
     schedule = ergast.get_race_schedule(season="current")
     last_round = None
 
@@ -88,11 +92,59 @@ def get_past_event():
 # gets results of the last race
 @app.get('/last-race-results')
 def get_past_results():
-    f1.Cache.enable_cache('/Users/natequan/Library/Caches/fastf1')
+    f1.Cache.enable_cache('/Users/natequan/Desktop/School/Thesis/f1-analytics/f1-analytics-be/cache')
     last_round = get_past_event()
-    
+
     results = ergast.get_race_results(season="current", round=last_round)
     results_content = results.content[0]
     json_results = results_content.to_json(orient='records')
 
     return json_results
+
+# need to create an endpoint that contains all circuit data
+# need to get all distinct track's data somehow
+# for now, we will just use the next event
+@app.get('/circuit-info')
+def get_next_circuit():
+    f1.Cache.enable_cache('/Users/natequan/Desktop/School/Thesis/f1-analytics/f1-analytics-be/cache')
+    session = f1.get_session(2023, 'Silverstone', 'Q')
+    session.load()
+    circuit_info = session.get_circuit_info()
+
+    corners = circuit_info.corners.to_json(orient='records')
+    # rotation = circuit_info.rotation.to_json(orient='records')
+
+    # return circuit_info.rotation
+    return json.dumps({'corners': corners, 'rotation': circuit_info.rotation})
+
+@app.get('/fastest-lap-info')
+def get_fastest_lap():
+    f1.Cache.enable_cache('/Users/natequan/Desktop/School/Thesis/f1-analytics/f1-analytics-be/cache')
+    session = f1.get_session(2023, 'Silverstone', 'Q')
+    session.load()
+
+    lap = session.laps.pick_fastest()
+    pos = lap.get_pos_data()
+
+    return pos.to_json(orient='records')
+
+@app.get('/results/{year}/{circuit}/{session}')
+def get_results(year: int, circuit: Union[int,str], session: str):
+    f1.Cache.enable_cache('/Users/natequan/Desktop/School/Thesis/f1-analytics/f1-analytics-be/cache')
+    weekend = f1.get_session(year, circuit, session)
+    weekend.load()
+    
+    results = weekend.results
+
+    return results.to_json(orient='records')
+
+@app.get('/event/{year}/{circuit}/{session}')
+def get_info(year: int, circuit: Union[int,str], session: str):
+    f1.Cache.enable_cache('/Users/natequan/Desktop/School/Thesis/f1-analytics/f1-analytics-be/cache')
+    weekend = f1.get_session(year, circuit, session)
+    weekend.load()
+    
+    event = weekend.event
+
+    return event.to_json() 
+
