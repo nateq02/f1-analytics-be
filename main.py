@@ -2,12 +2,15 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware # used to give permission to front-end
 import fastf1 as f1
 from fastf1.ergast import Ergast
+from pymongo import MongoClient
 import pandas as pd
 import json
 import datetime
 from typing import Union
+from routes.event_router import event_router
 
 # python3 -m uvicorn main:app --reload
+# using virtual environment: source venv/bin/activate
 
 app = FastAPI()
 ergast = Ergast()
@@ -17,6 +20,11 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
 )
+
+client = MongoClient("mongodb+srv://natequan:KlyW0bJBjQfa3Xqb@f1analytics.gspkb73.mongodb.net/?retryWrites=true&w=majority")
+db = client["f1Analytics"]
+event_coll = db["F1Events"]
+event_docs = event_coll.find()
 
 @app.get("/")
 def home():
@@ -148,3 +156,17 @@ def get_info(year: int, circuit: Union[int,str], session: str):
 
     return event.to_json() 
 
+# @app.get('/last-event')
+# def get_last_event():
+# @app.get('/schedule/{year}')
+# def get_schedule(year:int):
+#     f1.Cache.enable_cache('/Users/natequan/Desktop/School/Thesis/f1-analytics/f1-analytics-be/cache')
+#     schedule = f1.get_event_schedule(year)
+
+#     return schedule.to_json(orient='records')
+
+# @app.get('/test')
+# def get_event():
+#     most_recent = event_coll.find_one()
+#     return most_recent
+app.include_router(event_router)
