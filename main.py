@@ -8,6 +8,7 @@ import json
 import datetime
 from typing import Union
 from routes.event_router import event_router
+from routes.standing_router import standing_router
 
 # python3 -m uvicorn main:app --reload
 # using virtual environment: source venv/bin/activate
@@ -30,58 +31,58 @@ event_docs = event_coll.find()
 def home():
     return "Home Page for a Formula 1 Analytics Web App"
 
-@app.get("/driver-standings")
-def get_driver_standings():
-    # enables cache, maybe move outside of the function
-    f1.Cache.enable_cache('/Users/natequan/Desktop/School/Thesis/f1-analytics/f1-analytics-be/cache')
+# @app.get("/driver-standings")
+# def get_driver_standings():
+#     # enables cache, maybe move outside of the function
+#     f1.Cache.enable_cache('/Users/natequan/Desktop/School/Thesis/f1-analytics/f1-analytics-be/cache')
     
-    # calls get_driver_standings from Ergast
-        # need to call .content[0] to retreive the content
-            # data is stored in an array of multiple data frames hence the [0]
-    # standings = ergast.get_driver_standings(season='current').content[0]
-    standings = ergast.get_driver_standings(season='current').content[0]
+#     # calls get_driver_standings from Ergast
+#         # need to call .content[0] to retreive the content
+#             # data is stored in an array of multiple data frames hence the [0]
+#     # standings = ergast.get_driver_standings(season='current').content[0]
+#     standings = ergast.get_driver_standings(season='current').content[0]
 
-    # convert the standings df to json
-        # orient parameter is used to store each record in its own dictionary
-    return standings.to_json(orient = 'records')
+#     # convert the standings df to json
+#         # orient parameter is used to store each record in its own dictionary
+#     return standings.to_json(orient = 'records')
 
-@app.get("/constructor-standings")
-def get_constructor_standings():
-    # enables cache, maybe move outside of the function
-    f1.Cache.enable_cache('/Users/natequan/Desktop/School/Thesis/f1-analytics/f1-analytics-be/cache')
+# @app.get("/constructor-standings")
+# def get_constructor_standings():
+#     # enables cache, maybe move outside of the function
+#     f1.Cache.enable_cache('/Users/natequan/Desktop/School/Thesis/f1-analytics/f1-analytics-be/cache')
     
-    # calls get_constructor_standings from Ergast
-        # need to call .content[0] to retreive the content
-            # data is stored in an array of multiple data frames hence the [0]
-    standings = ergast.get_constructor_standings(season='current').content[0]
+#     # calls get_constructor_standings from Ergast
+#         # need to call .content[0] to retreive the content
+#             # data is stored in an array of multiple data frames hence the [0]
+#     standings = ergast.get_constructor_standings(season='current').content[0]
 
-    # convert the standings df to json
-        # orient parameter is used to store each record in its own dictionary
-    return standings.to_json(orient = 'records')
+#     # convert the standings df to json
+#         # orient parameter is used to store each record in its own dictionary
+#     return standings.to_json(orient = 'records')
 
-@app.get("/next")
-def get_next_session():
-    # enables cache
-    f1.Cache.enable_cache('/Users/natequan/Desktop/School/Thesis/f1-analytics/f1-analytics-be/cache')
+# @app.get("/next")
+# def get_next_session():
+#     # enables cache
+#     f1.Cache.enable_cache('/Users/natequan/Desktop/School/Thesis/f1-analytics/f1-analytics-be/cache')
     
-    # gets the upcoming events, returned as an events type object
-    upcoming = f1.get_events_remaining()
+#     # gets the upcoming events, returned as an events type object
+#     upcoming = f1.get_events_remaining()
 
-    # converts the events object into a dictionary of records
-        # upcoming_list is a list of dictionaries, each dictionary is a record
-    upcoming_list = upcoming.to_dict(orient = 'records')
+#     # converts the events object into a dictionary of records
+#         # upcoming_list is a list of dictionaries, each dictionary is a record
+#     upcoming_list = upcoming.to_dict(orient = 'records')
 
-    # Timestamps are not able to be converted to JSON, so need to remove them by converting to string
-    for event in upcoming_list:
-        for key, value in event.items():
-            if isinstance(value, datetime.datetime):
-                value = str(value)
-                event[key] = value
+#     # Timestamps are not able to be converted to JSON, so need to remove them by converting to string
+#     for event in upcoming_list:
+#         for key, value in event.items():
+#             if isinstance(value, datetime.datetime):
+#                 value = str(value)
+#                 event[key] = value
 
-    # converts the list of dictionaries into a JSON 
-    upcoming_json = json.dumps(upcoming_list)
+#     # converts the list of dictionaries into a JSON 
+#     upcoming_json = json.dumps(upcoming_list)
     
-    return upcoming_json
+#     return upcoming_json
 
 # function to get round number of a past event
 def get_past_event():
@@ -170,3 +171,4 @@ def get_info(year: int, circuit: Union[int,str], session: str):
 #     most_recent = event_coll.find_one()
 #     return most_recent
 app.include_router(event_router)
+app.include_router(standing_router)
