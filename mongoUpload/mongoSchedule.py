@@ -87,11 +87,11 @@ def update_schedule():
 
 
 # delete_schedule()
-# for year in range(2010, 2024):
-#     if year == 2020: 
-#         load_2020_schedule()
-#     else:
-#         load_schedule(year)
+for year in range(2010, 2024):
+    if year == 2020: 
+        load_2020_schedule()
+    else:
+        load_schedule(year)
 
 update_schedule()
 client.close()

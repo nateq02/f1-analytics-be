@@ -147,15 +147,15 @@ def get_results(year: int, circuit: Union[int,str], session: str):
 
     return results.to_json(orient='records')
 
-@app.get('/event/{year}/{circuit}/{session}')
-def get_info(year: int, circuit: Union[int,str], session: str):
-    f1.Cache.enable_cache('/Users/natequan/Desktop/School/Thesis/f1-analytics/f1-analytics-be/cache')
-    weekend = f1.get_session(year, circuit, session)
-    weekend.load()
+# @app.get('/event/{year}/{circuit}/{session}')
+# def get_info(year: int, circuit: Union[int,str], session: str):
+#     f1.Cache.enable_cache('/Users/natequan/Desktop/School/Thesis/f1-analytics/f1-analytics-be/cache')
+#     weekend = f1.get_session(year, circuit, session)
+#     weekend.load()
     
-    event = weekend.event
+#     event = weekend.event
 
-    return event.to_json() 
+#     return event.to_json() 
 
 # @app.get('/last-event')
 # def get_last_event():

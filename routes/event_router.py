@@ -20,7 +20,7 @@ def get_events2():
 # endpoint that gets all events for a given year
 @event_router.get("/events/{year}")
 def get_events(year: int): 
-    query = collection.find({"$expr": {"$eq": [{"$year": "$EventDate"}, year]}})
+    query = collection.find({"$expr": {"$eq": [{"$year": "$EventDate"}, year]}}).sort({"RoundNumber": 1})
     return event_list_serial(query)
 
 # endpoint that gets all upcoming events for the current year
