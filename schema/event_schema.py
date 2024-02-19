@@ -25,7 +25,9 @@ def event_individual_serial(event) -> dict:
         "Session5": event["Session5"],
         "Session5Date": event["Session5Date"],
         "Session5DateUtc": event["Session5DateUtc"],
-        "F1ApiSupport": event["F1ApiSupport"]
+        "F1ApiSupport": event["F1ApiSupport"],
+        "QualifyingResult": event.get("QualifyingResult", []),
+        "RaceResult": event.get("RaceResult", [])
     }
 
 # defines JSON for more than one event
