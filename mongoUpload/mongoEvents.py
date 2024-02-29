@@ -1,4 +1,5 @@
 from pymongo.mongo_client import MongoClient
+from pymongo import UpdateMany
 import fastf1 as f1
 from datetime import datetime
 import pandas as pd
@@ -91,10 +92,15 @@ def load_events(year):
             qual_result[col] = qual_result[col].dt.total_seconds()
             # must handle NaN values to avoid errors
             qual_result[col] = qual_result[col].replace({np.nan: None})
+        
+        qual_result["Position"] = qual_result["Position"].replace({np.nan: None})
 
         # As above, handling TimeDelta values and NaN values
         race_result["Time"] = race_result["Time"].dt.total_seconds()
         race_result["Time"] = race_result["Time"].replace({np.nan: None})
+        race_result["Position"] = race_result["Position"].replace({np.nan: None})
+        race_result["GridPosition"] = race_result["GridPosition"].replace({np.nan: None})
+        race_result["Points"] = race_result["Points"].replace({np.nan: None})
 
         # converting the results tables into dictionaries so they can be nested into the events dictionary
         schedule_dict[record]["QualifyingResult"] = qual_result.to_dict(orient="records")
@@ -126,7 +132,10 @@ def load_events(year):
             
             sprint_result["Time"] = sprint_result["Time"].dt.total_seconds()
             sprint_result["Time"] = sprint_result["Time"].replace({np.nan: None})
-            
+            sprint_result["Position"] = sprint_result["Position"].replace({np.nan: None})
+            sprint_result["GridPosition"] = sprint_result["GridPosition"].replace({np.nan: None})
+            sprint_result["Points"] = sprint_result["Points"].replace({np.nan: None})
+
             schedule_dict[record]["SprintResult"] = sprint_result.to_dict(orient="records")
             # handle the sprint shootout results the same as qualifying_results above
             if schedule_dict[record]["EventFormat"] == "sprint_shootout":
@@ -138,6 +147,8 @@ def load_events(year):
                     sprint_shootout_result[col] = sprint_shootout_result[col].dt.total_seconds()
                     sprint_shootout_result[col] = sprint_shootout_result[col].replace({np.nan: None})
                 
+                sprint_shootout_result["Position"] = sprint_shootout_result["Position"].replace({np.nan: None})
+
                 schedule_dict[record]["SprintShootoutResult"] = sprint_shootout_result.to_dict(orient="records")
 
     # insert the schedule to the database without testing events
@@ -179,9 +190,8 @@ def update_events():
         if not next_year_schedule.empty:
             load_events(current_year + 1)
 
-start=time.time()
-# delete_events()
 
+# delete_events()
 # for year in range(2018, 2024):
 #     load_events(year)
 update_events()
@@ -191,44 +201,5 @@ update_events()
 # load_events(2021)
 # load_events(2022)
 # load_events(2023)
-end=time.time()
-print(end-start)
 
-
-# update_events()
-# delete_events()
-# load_events(2023)
-
-# schedule = f1.get_event_schedule(2023)
-# condition = (schedule['RoundNumber'] == 0)
-# schedule = schedule[~condition]
-# schedule_dict = schedule.to_dict(orient="records")
-
-# result_to_add = f1.get_session(2023, "sakhir", 'race')
-# result_to_add2 = f1.get_session(2023, "sakhir", "qualifying")
-# result_to_add.load()
-# result_to_add2.load()
-
-# # result_to_add = result_to_add.to_dataframe()
-# # result_to_add2 = result_to_add2.to_dataframe()
-# # qualy_result = result_to_add2.results
-# # race_result = result_to_add.results
-
-# qualy_result = result_to_add2.results.drop(columns = ["BroadcastName", "DriverId", "TeamColor", "TeamId", "HeadshotUrl", 
-#                                     "ClassifiedPosition", "GridPosition", "Time", "Status", "Points"])
-
-# race_result = result_to_add.results.drop(columns = ["BroadcastName", "DriverId", "TeamColor", "TeamId", "HeadshotUrl",
-#                                     "Q1", "Q2", "Q3"])
-
-# qualy_result["Q1"] = qualy_result["Q1"].dt.total_seconds()
-# qualy_result["Q2"] = qualy_result["Q2"].dt.total_seconds()
-# qualy_result["Q3"] = qualy_result["Q3"].dt.total_seconds()
-# race_result["Time"] = race_result["Time"].dt.total_seconds()
-
-# schedule_dict[0]["RaceResult"] = race_result.to_dict(orient="records")
-# schedule_dict[0]["QualifyingResult"] = qualy_result.to_dict(orient="records")
-# collection.insert_one(schedule_dict[0])
-# print(schedule_dict[0].keys())
-# print(schedule_dict[0]["RaceResult"][19].keys())
-# print(schedule_dict[0]["QualifyingResult"][19].keys())
 client.close()
