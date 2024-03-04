@@ -82,7 +82,7 @@ def update_driver_standings():
 
 # for year in range(2010, 2023):
     # load_driver_standings(year)
-
-update_driver_standings()
+load_driver_standings(2024)
+# update_driver_standings()
 
 client.close()

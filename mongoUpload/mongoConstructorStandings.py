@@ -80,9 +80,10 @@ def update_constructor_standings():
 
 delete_constructor_standings()
 
-for year in range(2010, 2023):
-    load_constructor_standings(year)
+# for year in range(2010, 2023):
+#     load_constructor_standings(year)
 
-update_constructor_standings()
+# update_constructor_standings()
 
+load_constructor_standings(2024)
 client.close()

@@ -52,17 +52,19 @@ def get_upcoming_events():
 def get_last_event():
     now = datetime.now()
     # query event where year=current_year and less than "now"
-    curr_year = collection.find({"$and": [{"$expr": {"$eq": [{"$year": "$EventDate"}, now.year]}}, {"EventDate": {"$lt": now}}]}).sort({"RoundNumber": 1})
-    # checks if there is an event found in the previous query
-    count = collection.count_documents({"$and": [{"$expr": {"$eq": [{"$year": "$EventDate"}, now.year]}}, {"EventDate": {"$lt": now}}]})
+    curr_year = collection.find({"$and": [{"$expr": {"$eq": [{"$year": "$EventDate"}, now.year]}}, {"EventDate": {"$lt": now}}]}).sort({"RoundNumber": 1}).limit(1)
+
+    # get the first document from the cursor, or None if the cursor is empty
+    last_event = next(curr_year, None)
     
     # if no event is found, then we look at last year's events
-    if count == 0: 
+    if last_event is None:
         # find last year's events and sort in opposite order
-        last_year = collection.find({"$expr": {"$eq": [{"$year": "$EventDate"}, now.year - 1]}}).sort({"RoundNumber": -1})
-        # last event must be the first record in the sorted query
-        last_event = last_year[0]
+        last_year = collection.find({"$expr": {"$eq": [{"$year": "$EventDate"}, now.year - 1]}}).sort("RoundNumber", -1).limit(1)
+        # get the first document from the cursor, or None if the cursor is empty
+        last_event = next(last_year, None)
+    
+    if last_event is not None:
         return event_individual_serial(last_event)
     else:
-        return event_individual_serial(curr_year)
-
+        return {"error": "No event found"}
