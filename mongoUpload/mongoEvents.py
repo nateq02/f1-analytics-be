@@ -190,11 +190,102 @@ def update_events():
         if not next_year_schedule.empty:
             load_events(current_year + 1)
 
+def update_results():
+    current_date = datetime.now()
+    current_year = current_date.year
+    current_year_events = list(collection.find({"EventDate": {"$gte": datetime(current_year, 1, 1)}}).sort({"RoundNumber": 1}))
+    print(current_year_events)
+    for event in current_year_events:
+        if event["EventDate"] < current_date:
+            try:
+                if not event["RaceResult"] or not event["QualifyingResult"]:
+                    
+                    qual = f1.get_session(year=current_year, gp=event["RoundNumber"], identifier='Qualifying')
+                    qual.load()
+
+                    race = f1.get_session(year=current_year, gp=event["RoundNumber"], identifier='Race')
+                    race.load()
+
+                    qual_result = qual.results
+                    race_result = race.results
+                    print(qual_result)
+                    # drop unnecessary columns to reduce the amount of data being stored
+                    qual_result = qual_result.drop(columns = ["BroadcastName", "DriverId", "TeamColor", "TeamId", "HeadshotUrl", 
+                                                "ClassifiedPosition", "GridPosition", "Time", "Status", "Points"])
+
+                    race_result = race_result.drop(columns = ["BroadcastName", "DriverId", "TeamColor", "TeamId", "HeadshotUrl",
+                                                "Q1", "Q2", "Q3"])
+
+                    # Handling the time columns in the qual results
+                    for col in ["Q1", "Q2", "Q3"]: 
+                        # mongo can't encode TimeDelta values, so they must be converted
+                        qual_result[col] = qual_result[col].dt.total_seconds()
+                        # must handle NaN values to avoid errors
+                        qual_result[col] = qual_result[col].replace({np.nan: None})
+                    
+                    qual_result["Position"] = qual_result["Position"].replace({np.nan: None})
+
+                    # As above, handling TimeDelta values and NaN values
+                    race_result["Time"] = race_result["Time"].dt.total_seconds()
+                    race_result["Time"] = race_result["Time"].replace({np.nan: None})
+                    race_result["Position"] = race_result["Position"].replace({np.nan: None})
+                    race_result["GridPosition"] = race_result["GridPosition"].replace({np.nan: None})
+                    race_result["Points"] = race_result["Points"].replace({np.nan: None})
+
+                    # converting the results tables into dictionaries so they can be nested into the events dictionary
+                    collection.update_one({"_id": event["_id"]}, {"$set": {"QualifyingResult": qual_result.to_dict(orient="records")}})
+                    collection.update_one({"_id": event["_id"]}, {"$set": {"RaceResult": race_result.to_dict(orient="records")}})
+
+                    
+                    if event["EventFormat"] == "sprint" or event["EventFormat"] == "sprint_shootout":
+                        sprint = f1.get_session(year=current_year, gp=event["RoundNumber"], identifier='Sprint')
+                        sprint.load()
+
+                        # handle the sprint results the same as the race_results above
+                        sprint_result = sprint.results
+                        sprint_result = sprint_result.drop(columns = ["BroadcastName", "DriverId", "TeamColor", "TeamId", "HeadshotUrl",
+                                                    "Q1", "Q2", "Q3"])
+                        
+                        sprint_result["Time"] = sprint_result["Time"].dt.total_seconds()
+                        sprint_result["Time"] = sprint_result["Time"].replace({np.nan: None})
+                        sprint_result["Position"] = sprint_result["Position"].replace({np.nan: None})
+                        sprint_result["GridPosition"] = sprint_result["GridPosition"].replace({np.nan: None})
+                        sprint_result["Points"] = sprint_result["Points"].replace({np.nan: None})
+
+                        collection.update_one({"_id": event["_id"]}, {"$set": {"SprintResult": sprint_result.to_dict(orient="records")}})
+
+                        if event["EventFormat"] == "sprint_shootout":
+                            sprint_shootout = f1.get_session(year=current_year, gp=event["RoundNumber"], identifier='Sprint Shootout')
+                            sprint_shootout.load()
+
+                            sprint_shootout_result = sprint_shootout.results
+                            sprint_shootout_result = sprint_shootout_result.drop(columns = ["BroadcastName", "DriverId", "TeamColor", "TeamId", "HeadshotUrl", 
+                                                "ClassifiedPosition", "GridPosition", "Time", "Status", "Points"])
+                            
+                            for col in ["Q1", "Q2", "Q3"]: 
+                                sprint_shootout_result[col] = sprint_shootout_result[col].dt.total_seconds()
+                                sprint_shootout_result[col] = sprint_shootout_result[col].replace({np.nan: None})
+                            
+                            sprint_shootout_result["Position"] = sprint_shootout_result["Position"].replace({np.nan: None})
+
+                            collection.update_one({"_id": event["_id"]}, {"$set": {"SprintShootoutResult": sprint_shootout_result.to_dict(orient="records")}})
+                
+                else:
+                    continue
+                
+            except Exception as e:
+                print(e)
+                continue
+        
+        else:
+            break
+
 
 # delete_events()
 # for year in range(2018, 2024):
 #     load_events(year)
-update_events()
+# update_events()
+update_results()
 # load_events(2018)
 # load_events(2019)
 # load_events(2020)
