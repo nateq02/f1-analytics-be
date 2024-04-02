@@ -190,15 +190,24 @@ def update_events():
         if not next_year_schedule.empty:
             load_events(current_year + 1)
 
-def update_results():
+def update_results(collection):
+    # gets the current year
     current_date = datetime.now()
     current_year = current_date.year
+
+    # get a list of the current year's events
     current_year_events = list(collection.find({"EventDate": {"$gte": datetime(current_year, 1, 1)}}).sort({"RoundNumber": 1}))
-    print(current_year_events)
+    # print(current_year_events)
+
+    # iterate through the current year's events
     for event in current_year_events:
+        # if the event date is before today, try to update the results
         if event["EventDate"] < current_date:
             try:
-                if not event["RaceResult"] or not event["QualifyingResult"]:
+                #print(event)
+                # if RaceResult or QualifyingResult don't exist
+                    # Load the session's results and update the event record in the db
+                if "RaceResult" not in event or "QualifyingResult" not in event:
                     
                     qual = f1.get_session(year=current_year, gp=event["RoundNumber"], identifier='Qualifying')
                     qual.load()
@@ -208,7 +217,7 @@ def update_results():
 
                     qual_result = qual.results
                     race_result = race.results
-                    print(qual_result)
+                    # print(qual_result)
                     # drop unnecessary columns to reduce the amount of data being stored
                     qual_result = qual_result.drop(columns = ["BroadcastName", "DriverId", "TeamColor", "TeamId", "HeadshotUrl", 
                                                 "ClassifiedPosition", "GridPosition", "Time", "Status", "Points"])
@@ -236,7 +245,7 @@ def update_results():
                     collection.update_one({"_id": event["_id"]}, {"$set": {"QualifyingResult": qual_result.to_dict(orient="records")}})
                     collection.update_one({"_id": event["_id"]}, {"$set": {"RaceResult": race_result.to_dict(orient="records")}})
 
-                    
+                    # updating the events if it is a sprint weekend
                     if event["EventFormat"] == "sprint" or event["EventFormat"] == "sprint_shootout":
                         sprint = f1.get_session(year=current_year, gp=event["RoundNumber"], identifier='Sprint')
                         sprint.load()
@@ -252,12 +261,15 @@ def update_results():
                         sprint_result["GridPosition"] = sprint_result["GridPosition"].replace({np.nan: None})
                         sprint_result["Points"] = sprint_result["Points"].replace({np.nan: None})
 
+                        # updates the collection with the Sprint Result
                         collection.update_one({"_id": event["_id"]}, {"$set": {"SprintResult": sprint_result.to_dict(orient="records")}})
 
+                        # checks if the event contains a sprint shootout that data is needed for
                         if event["EventFormat"] == "sprint_shootout":
                             sprint_shootout = f1.get_session(year=current_year, gp=event["RoundNumber"], identifier='Sprint Shootout')
                             sprint_shootout.load()
 
+                            # handle sprint shootout results like the qualifying results above
                             sprint_shootout_result = sprint_shootout.results
                             sprint_shootout_result = sprint_shootout_result.drop(columns = ["BroadcastName", "DriverId", "TeamColor", "TeamId", "HeadshotUrl", 
                                                 "ClassifiedPosition", "GridPosition", "Time", "Status", "Points"])
@@ -280,17 +292,5 @@ def update_results():
         else:
             break
 
-
-# delete_events()
-# for year in range(2018, 2024):
-#     load_events(year)
-# update_events()
-update_results()
-# load_events(2018)
-# load_events(2019)
-# load_events(2020)
-# load_events(2021)
-# load_events(2022)
-# load_events(2023)
 
 client.close()

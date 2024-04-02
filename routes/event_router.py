@@ -6,7 +6,7 @@ from schema.event_schema import event_list_serial, event_individual_serial
 from bson import ObjectId
 from datetime import datetime
 from typing import Union
-import json 
+from mongoUpload.mongoUpdate import job
 
 COLLECTION_NAME = "Events"
 
@@ -52,7 +52,7 @@ def get_upcoming_events():
 def get_last_event():
     now = datetime.now()
     # query event where year=current_year and less than "now"
-    curr_year = collection.find({"$and": [{"$expr": {"$eq": [{"$year": "$EventDate"}, now.year]}}, {"EventDate": {"$lt": now}}]}).sort({"RoundNumber": 1}).limit(1)
+    curr_year = collection.find({"$and": [{"$expr": {"$eq": [{"$year": "$EventDate"}, now.year]}}, {"EventDate": {"$lt": now}}]}).sort({"RoundNumber": -1}).limit(1)
 
     # get the first document from the cursor, or None if the cursor is empty
     last_event = next(curr_year, None)
@@ -68,3 +68,10 @@ def get_last_event():
         return event_individual_serial(last_event)
     else:
         return {"error": "No event found"}
+
+# post request used to update the data
+@event_router.post("/update")
+def update_data():
+    # calls all of the update data functions: updates driver standings, constructor standings, and event info
+    job()
+    return {"status": "Update Completed"}

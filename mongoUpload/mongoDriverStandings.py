@@ -39,7 +39,7 @@ def load_driver_standings(year):
 def delete_driver_standings():
     collection.delete_many({})
 
-def update_driver_standings():
+def update_driver_standings(collection):
     # gets the current standings
     current_standings = ergast.get_driver_standings(season = "current").content[0]
     # gets the current year
@@ -51,38 +51,39 @@ def update_driver_standings():
         {
             "$group": {
                 "_id": None,
-                "max_year": {"$max": {"$year": "$EventDate"}}
+                "max_year": {"$max": "$year"}
             }
         }
     ])
     # gets the max_year
     for document in result:
         max_year = document.get("max_year", 0)
-    
-    # get the max points from the most recent season for comparison
-    latest_max_points = collection.find({ "year": max_year, "position": 1}, {"points": 1, "_id": 0})
 
-    # gets the current_standings max points
-    curr_max_points = current_standings.iloc[0]["points"]
+    db_standings = list(collection.find({ "year": max_year }))
 
-    # if the two max_points values aren't equal:
-        # 1 - Current year standings need to be updated
-        # 2 - It's changing from last year to the current year
-    if latest_max_points != curr_max_points: 
-        # Case 1: deletes all of this years values and updates them
-        if (current_year == max_year):
-            collection.delete_many( { "year": max_year} )
-            collection.insert_many(current_standings)
-        # Case 2: keeps all of the max year's values, adds the current year standings
-        else: 
-            current_standings["year"] = current_year - 1
-            collection.insert_many(current_standings.to_dict(orient="records"))
+    for i, row in current_standings.iterrows():
+        db_row = db_standings[i]
+        
+        # if the two max_points values aren't equal:
+            # 1 - Current year standings need to be updated
+            # 2 - It's changing from last year to the current year
+        if db_row["points"] != row["points"]:
+            # Case 1: deletes all of this years values and updates them
+            if (current_year == max_year):
+                collection.delete_many( { "year": int(max_year)} )
+                collection.insert_many(current_standings)
+            # Case 2: keeps all of the max year's values, adds the current year standings
+            else: 
+                current_standings["year"] = current_year
+                collection.insert_many(current_standings.to_dict(orient="records"))
+            
+            break
 
 # delete_driver_standings()
 
-# for year in range(2010, 2023):
-    # load_driver_standings(year)
-load_driver_standings(2024)
+# for year in range(2018, 2024):
+#     load_driver_standings(year)
+# load_driver_standings(2024)
 # update_driver_standings()
 
 client.close()
